@@ -5,12 +5,11 @@ from typing import Dict, Any, List
 import json
 import random
 
-load_dotenv()
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 model = OpenAIServerModel(
     model_id="gpt-4o-mini",
-    api_key=os.getenv("UDACITY_OPENAI_API_KEY"),
-    api_base="https://openai.vocareum.com/v1",
+    api_key=OPENAI_API_KEY,
 )
 
 # Global state for simplicity
@@ -19,6 +18,9 @@ DISTRIBUTION_HISTORY = {}
 def check_history(penguin_name: str) -> Dict[str, Any]:
     """
     Check the recent resource distribution history for a specific penguin.
+    
+    Args:
+    penguin_name(str): unique identifier of penguin
     """
     history = DISTRIBUTION_HISTORY.get(penguin_name, [])
     recent_food = sum(h["food"] for h in history[-3:]) if history else 0
@@ -29,6 +31,11 @@ def check_history(penguin_name: str) -> Dict[str, Any]:
 def record_distribution(penguin_name: str, food: int, has_tool: bool) -> str:
     """
     Record the distribution of resources.
+    
+    Args:
+    penguin_name(str): unique identifier of penguin
+    food (int): amount of food that the penguin has
+    has_tool (bool): whether the penguin has a tool
     """
     if penguin_name not in DISTRIBUTION_HISTORY:
         DISTRIBUTION_HISTORY[penguin_name] = []
@@ -39,7 +46,12 @@ def record_distribution(penguin_name: str, food: int, has_tool: bool) -> str:
 # --- EXAMPLE TOOL (Student can change) ---
 @tool
 def find_food(penguin_name: str, method: str) -> int:
-  """Finds food using a specified method."""
+  """Finds food using a specified method.
+  
+  Args:
+  penguin_name (str): unique identifier of penguin
+  method (str): method used by penguin; either 'fishing' or 'foraging'
+  """
   if method == "fishing":
     food_found = random.randint(2, 7)  # More food when fishing
     print(f"{penguin_name} went fishing and found {food_found} food.")
@@ -169,7 +181,7 @@ class PenguinAgent(ToolCallingAgent):
 
 def run_simulation():
     scientist = ScientistAgent(initial_food_supply=20, refresh_interval=5)
-    penguins = [PenguinAgent(f"Penguin {i}") for i in range(4)]
+    penguins = [PenguinAgent(f"Penguin{i}") for i in range(4)]
 
     print("\nStarting Simulation...")
     for round in range(3):
