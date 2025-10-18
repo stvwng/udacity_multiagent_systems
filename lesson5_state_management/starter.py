@@ -349,7 +349,9 @@ def run_enhanced_demo():
     # Final state check
     # TODO: Add code to display final purchase history and summary
     print("Final purchase history")
-    print(get_purchase_history(user_id)[-1])
+    purchase_history = get_purchase_history(user_id)
+    for p in purchase_history:
+        print(p)
     print()
     print("Summary")
     print(get_purchase_summary(user_id))
