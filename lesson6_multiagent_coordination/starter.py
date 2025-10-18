@@ -20,14 +20,11 @@ from smolagents import (
 
 # Load your OpenAI API key
 import os
-import dotenv
-dotenv.load_dotenv(dotenv_path="../.env")
-openai_api_key = os.getenv("UDACITY_OPENAI_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 model = OpenAIServerModel(
     model_id="gpt-4o-mini",
-    api_base="https://openai.vocareum.com/v1",
-    api_key=openai_api_key,
+    api_key=OPENAI_API_KEY,
 )
 
 # Pasta Factory State Management
@@ -152,7 +149,11 @@ def add_to_production_queue(
     # Verify that pasta_shape is valid
     # Add the order to the queue
     # Return success status with estimated delivery date
-    pass
+    pasta_recipe = check_pasta_recipe(pasta_shape)
+    if pasta_recipe:
+        factory_state.production_queue.append(PastaOrder(order_id=order_id, pasta_shape=pasta_shape, quantity=quantity,priority=priority,customer_notes=customer_notes))
+        return True, 
+    return False
 
 @tool
 def create_custom_pasta_recipe(
@@ -173,7 +174,10 @@ def create_custom_pasta_recipe(
     # Validate ingredients exist in inventory
     # Add the custom recipe to factory_state.custom_recipes
     # Return success status
-    pass
+    if all([ingredient in factory_state.inventory.keys() for ingredient in ingredients.keys()]):
+        factory_state.custom_recipes["pasta_name"] = ingredients
+        return True
+    return False
 
 @tool
 def prioritize_order(order_id: str, new_priority: int) -> Dict[str, Any]:
@@ -191,7 +195,11 @@ def prioritize_order(order_id: str, new_priority: int) -> Dict[str, Any]:
     # Find the order in the queue
     # Update its priority
     # Return success status with new estimated delivery date
-    pass
+    for order in factory_state.production_queue:
+        if order["order_id"] == order_id:
+            order["new_priority"] = new_priority
+            return True
+    return False
 
 # ======= Agents =======
 
