@@ -28,13 +28,11 @@ from smolagents import (
     tool,
 )
 
-dotenv.load_dotenv(dotenv_path="../.env")
-openai_api_key = os.getenv("UDACITY_OPENAI_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 model = OpenAIServerModel(
     model_id="gpt-4o-mini",
-    api_base="https://openai.vocareum.com/v1",
-    api_key=openai_api_key,
+    api_key=OPENAI_API_KEY,
 )
 
 # Fruit database
@@ -131,7 +129,16 @@ def purchase_fruit(user_id: str, fruit_name: str, quantity: int) -> str:
     # TODO: Create a purchase record and add it to the user's state
     # Be sure to include timestamp, fruit name, quantity, price, and total cost
     # Make sure to initialize the purchases list if it doesn't exist
-    pass
+    user_state = user_states.get(user_id, {"preferences": [], "purchases": []})
+    purchase_record = {
+        "timestamp": datetime.now(),
+        "fruit_name": fruit_name,
+        "quantity": quantity,
+        "price": fruit_data.get(fruit_name).get("price"),
+        "total_cost": fruit_data.get(fruit_name).get("price") * quantity,
+    }
+    user_state["purchases"].append(purchase_record)
+    return f"Purchase recorded successfully: {purchase_record}"
 
 # TODO: Implement this new tool to retrieve purchase history
 @tool
@@ -146,7 +153,8 @@ def get_purchase_history(user_id: str) -> List[Dict]:
     """
     # TODO: Return the user's purchase history
     # Make sure to handle the case where there is no purchase history
-    pass
+    user_state = user_states.get(user_id, {"preferences": [], "purchases": []})
+    return user_state["purchases"]
 
 # TODO: Implement this new tool to provide a summary of purchases
 @tool
@@ -166,7 +174,29 @@ def get_purchase_summary(user_id: str) -> Dict:
     # - Total number of transactions
     # - Most frequently purchased fruit
     # - Total number of fruits purchased
-    pass
+    user_state = user_states.get(user_id, {"preferences": [], "purchases": []})
+    user_purchases = user_state["purchases"]
+    
+    total_spent = sum([purchase["total_cost"] for purchase in user_purchases])
+    num_transactions = len(user_purchases)
+    total_fruit_purchased = sum([purchase["quantity"] for purchase in user_purchases])
+    
+    max_count = 0
+    max_fruit = None
+    counts = dict()
+    for purchase in user_purchases:
+        counts[purchase["fruit_name"]] = counts.get(purchase["quantity"] + 1, 1)
+        if counts[purchase["fruit_name"]] > max_count:
+            max_count= counts[purchase["fruit_name"]]
+            max_fruit = purchase["fruit_name"]
+            
+    return {
+        "total_spent": total_spent,
+        "num_transactions": num_transactions,
+        "most_frequent_fruit": max_fruit,
+        "total_fruit_purchased": total_fruit_purchased
+    }
+    
 
 class EnhancedFruitAdvisorAgent(ToolCallingAgent):
     """
@@ -235,6 +265,7 @@ class EnhancedOrchestratorAgent(ToolCallingAgent):
         
         # TODO: Load any existing purchase history
         # You'll need to use your get_purchase_history tool
+        purchase_history = get_purchase_history(user_id)
         
         # Construct a prompt for the fruit advisor agent
         prompt = f"""
@@ -317,6 +348,11 @@ def run_enhanced_demo():
     
     # Final state check
     # TODO: Add code to display final purchase history and summary
+    print("Final purchase history")
+    print(get_purchase_history(user_id)[-1])
+    print()
+    print("Summary")
+    print(get_purchase_summary(user_id))
     
     print("\n" + "="*70)
     print("Demo complete! This demonstrates state persistence and transaction tracking across sessions.")
